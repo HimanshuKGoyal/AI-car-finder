@@ -2,7 +2,6 @@ from sqlalchemy.orm import DeclarativeBase, sessionmaker
 from sqlalchemy import create_engine
 import os
 
-
 class Base(DeclarativeBase):
     pass
 

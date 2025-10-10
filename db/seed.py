@@ -27,7 +27,6 @@ def seed_makes_if_empty():
     session = SessionLocal()
     try:
         # Ensure tables are created if they don't exist
-        
         if is_table_empty(session):
             print("masters_make is empty. Seeding default makes...")
             for make in DEFAULT_MAKES:
@@ -38,6 +37,3 @@ def seed_makes_if_empty():
             print("masters_make already has data. Skipping seeding.")
     finally:
         session.close()
-
-if __name__ == "__main__":
-    seed_makes_if_empty()
