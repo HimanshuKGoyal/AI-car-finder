@@ -10,7 +10,7 @@ app = FastAPI(title=settings.APP_NAME, debug=settings.DEBUG)
 setup_cors(app, settings.CORS_ALLOW_ORIGINS)
 app.add_middleware(SecurityHeadersMiddleware)
 
-app.include_router(ranking_router, prefix="/v1")
+app.include_router(ranking_router, prefix=settings.API_PREFIX)
 app.include_router(feedback_router, prefix="")
 
 # Health check
