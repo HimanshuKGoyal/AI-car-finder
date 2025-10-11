@@ -6,9 +6,6 @@ def create_tables():
     Base.metadata.create_all(bind=engine)
     print("Done. If using SQLite, local_db.sqlite should now exist.")
 
-def seed_tables():
-    seed_makes_if_empty()
-
 
 if __name__=="__main__":
     create_tables()
