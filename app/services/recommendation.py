@@ -3,6 +3,23 @@
 from typing import Dict, List, Tuple
 from app.schemas.ranking import UserData, Priority, FeaturePriority
 
+from sqlalchemy.orm import Session
+from db.repositories.catalog_repo import fetch_active_variants_with_specs
+
+# def rank_cars_from_db(db: Session, user: UserData, top_n: int = 5):
+#     allowed_body = list(user.purchase_basics.body_types)  # strings
+#     allowed_fuel = list(user.purchase_basics.fuel_types)  # strings
+#     budget = user.purchase_basics.budget
+
+#     catalog = fetch_active_variants_with_specs(
+#         db,
+#         allowed_body_types=allowed_body,
+#         allowed_fuel_types=allowed_fuel,
+#         max_budget_inr=budget,
+#         limit=200,
+#     )
+#     # Then reuse your existing scoring function using `catalog` as input instead of static CATALOG
+
 CarSpec = Dict[str, object]
 
 # Demo catalog: add a simple reliability proxy (1–5). In production, source this from service history/claims/TCO.
