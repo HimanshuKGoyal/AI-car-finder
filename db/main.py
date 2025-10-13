@@ -1,5 +1,4 @@
 from db.base import engine, Base
-from db.seed import seed_makes_if_empty
 
 def create_tables():
     print("Initiating DB Tables Creation on engine: ", engine.url)
@@ -9,4 +8,3 @@ def create_tables():
 
 if __name__=="__main__":
     create_tables()
-    seed_tables()

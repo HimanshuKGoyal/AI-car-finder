@@ -26,7 +26,7 @@ class Settings:
     API_PREFIX: str = os.getenv("API_PREFIX", "/v1")
 
     # Dev uses SQLite, Prod requires Postgres
-    sqlite_url: str = os.getenv("SQLITE_URL", "sqlite:///./reco.db")
+    sqlite_url: str = os.getenv("SQLITE_URL", "sqlite:///./Torque.db")
     postgres_url: str = os.getenv("POSTGRES_URL", "")
 
     # CORS
