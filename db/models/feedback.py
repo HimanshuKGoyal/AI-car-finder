@@ -2,7 +2,7 @@ from sqlalchemy import DateTime, Integer, Text, ForeignKey, func, CheckConstrain
 from sqlalchemy.orm import Mapped, mapped_column
 from db.base import Base
 
-class Feedback(Base):
+class RevvFeedback(Base):
     __tablename__ = "feedback"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)

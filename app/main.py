@@ -7,8 +7,8 @@ from app.api.v1.feedback import router as feedback_router
 
 app = FastAPI(title=settings.APP_NAME, debug=settings.DEBUG)
 
-setup_cors(app, settings.CORS_ALLOW_ORIGINS)
-app.add_middleware(SecurityHeadersMiddleware)
+# setup_cors(app, settings.CORS_ALLOW_ORIGINS)
+# app.add_middleware(SecurityHeadersMiddleware)
 
 app.include_router(ranking_router, prefix=settings.API_PREFIX)
 app.include_router(feedback_router, prefix="")

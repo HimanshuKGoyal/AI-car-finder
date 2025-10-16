@@ -1,42 +1,138 @@
-# # reco_service/db/seed.py
-# from typing import List
-# from db.base import SessionLocal
-# from db.models.masters import MastersMake
-# from db.repositories.masters_repo import ensure_make
+# filename: app/seed_from_csv.py
+from __future__ import annotations
+import csv
+from pathlib import Path
+from datetime import date
+from typing import Optional
 
-# DEFAULT_MAKES: List[str] = [
-#             "Bugatti", "Chevrolet", "Daewoo", "Datsun", "Ford", 
-#             "Hindustan Motors", "Hummer", "ICML", "Mahindra Renault",
-#             "Mitsubishi", "Opel", "Premier", "San", "Ssangyong",
-#             "Aston Martin", "Audi", "Bentley", "BMW", "BYD",
-#             "Citroen", "Ferrari", "Fiat", "Fisker", "Force Motors",
-#             "Honda", "Hyundai", "Isuzu", "Jaguar", "Jeep",
-#             "Kia", "Lamborghini", "Land Rover", "Leapmotor", "Lexus",
-#             "Lotus", "Mahindra", "Maruti Suzuki", "Maserati", "Maybach",
-#             "McLaren", "Mercedes-Benz", "MG", "Mini", "Nissan",
-#             "Ola", "Porsche", "Pravaig", "Renault", "Rolls-Royce",
-#             "Skoda", "Tata", "Tesla", "Toyota", "Vinfast",
-#             "Volkswagen", "Volvo"
-#         ]
+from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
-# def is_table_empty(session) -> bool:
-#     # Efficient emptiness check
-#     return session.query(MastersMake.id).limit(1).first() is None
+from db.base import SessionLocal
+from db.models import MastersMake, Country, BrandPresence
+from db.repositories.masters_repo import ensure_make
 
-# def seed_makes_if_empty():
-#     session = SessionLocal()
-#     try:
-#         # Ensure tables are created if they don't exist
-#         if is_table_empty(session):
-#             print("masters_make is empty. Seeding default makes...")
-#             for make in DEFAULT_MAKES:
-#                 # ensure_make handles case-insensitivity and slug creation
-#                 ensure_make(session, make)
-#             print("Seeding complete.")
-#         else:
-#             print("masters_make already has data. Skipping seeding.")
-#     finally:
-#         session.close()
+
+
+CSV_PATH = Path(__file__).parent / "data" / "brand_presence_india.csv"
+
+def parse_year(val: str | None) -> Optional[int]:
+    v = (val or "").strip()
+    if not v:
+        return None
+    try:
+        y = int(v)
+        if 1800 <= y <= 9999:
+            return y
+        return None
+    except ValueError:
+        return None
+
+def year_to_start(y: int) -> date:
+    return date(y, 1, 1)
+
+def year_to_end_exclusive(y: int) -> date:
+    # Exclusive end: Jan 1 of next year
+    return date(y, 12, 31)
+
+def upsert_country(db: Session, iso_code: str, name: str) -> Country:
+    country = db.query(Country).filter(Country.iso_code == iso_code).one_or_none()
+    if country is None:
+        country = Country(iso_code=iso_code, name=name)
+        db.add(country)
+        db.flush()  # assign id
+    return country
+
+def upsert_brand(db: Session, name: str) -> MastersMake:
+    brand = db.query(MastersMake).filter(MastersMake.name == name).one_or_none()
+    if brand is None:
+        brand = MastersMake(name=name)
+        db.add(brand)
+        db.flush()
+    return brand  
+
+def insert_presence_if_applicable(
+    db: Session,
+    brand_id: int,
+    country_id: int,
+    start_year: Optional[int],
+    end_year: Optional[int],
+) -> None:
+    # Skip rows where both are None (not launched)
+    if start_year is None and end_year is None:
+        return
+
+    # If only end_year exists but no start, skip (inconsistent)
+    if start_year is None and end_year is not None:
+        return
+
+    start = year_to_start(start_year)
+    end = None
+    if end_year is not None:
+        if end_year < start_year:
+            # invalid interval; skip
+            return
+        end = year_to_end_exclusive(end_year)
+
+    bp = BrandPresence(
+        brand_id=brand_id,
+        country_id=country_id,
+        active_start=start,
+        active_end=end,
+    )
+    db.add(bp)
+
+def seed():
+    if not CSV_PATH.exists():
+        raise FileNotFoundError(f"CSV not found at {CSV_PATH}")
+
+    db: Session = SessionLocal()
+    try:
+        # 1) Ensure India country exists
+        india = upsert_country(db, iso_code="IN", name="India")
+
+        # 2) Read CSV (auto-detect comma vs tab; your file is CSV so comma)
+        with CSV_PATH.open("r", encoding="utf-8", newline="") as f:
+            sample = f.read(2048)
+            delimiter = "," if sample.count(",") >= sample.count("\t") else "\t"
+            f.seek(0)
+            reader = csv.DictReader(f, delimiter=delimiter)
+
+            for row in reader:
+                brand_name = (row.get("Brand") or "").strip()
+                country_name = (row.get("Country") or "").strip()
+                start_year = parse_year(row.get("Active Start"))
+                end_year = parse_year(row.get("Active End"))
+                print(brand_name, country_name, start_year, end_year)
+                if not brand_name:
+                    continue
+                # Only seed India rows
+                if country_name and country_name.lower() != "india":
+                    continue
+
+                brand = upsert_brand(db, brand_name)
+                insert_presence_if_applicable(
+                    db,
+                    brand_id=brand.id,
+                    country_id=india.id,
+                    start_year=start_year,
+                    end_year=end_year,
+                )
+
+        try:
+            db.commit()
+        except IntegrityError as e:
+            # Overlaps or duplicates will raise here (due to constraints)
+            db.rollback()
+            raise e
+
+        print("Seeding completed: Brands + India + presence intervals from CSV.")
+    finally:
+        db.close()
+
+
+if __name__ == "__main__":
+    seed()
 
 
 

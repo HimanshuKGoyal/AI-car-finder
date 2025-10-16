@@ -3,8 +3,8 @@
 from typing import Dict, List, Tuple
 from app.schemas.ranking import UserData, Priority, FeaturePriority
 
-from sqlalchemy.orm import Session
-from db.repositories.catalog_repo import fetch_active_variants_with_specs
+# from sqlalchemy.orm import Session
+# from db.repositories.catalog_repo import fetch_active_variants_with_specs
 
 # def rank_cars_from_db(db: Session, user: UserData, top_n: int = 5):
 #     allowed_body = list(user.purchase_basics.body_types)  # strings
